@@ -1,6 +1,10 @@
 name: Build
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [ main, master ] # Optional: limits automatic builds to main branches
+  pull_request:
+  workflow_dispatch: # <-- THIS enables the manual "Run workflow" button on GitHub
 
 env:
   CARGO_TERM_COLOR: always
