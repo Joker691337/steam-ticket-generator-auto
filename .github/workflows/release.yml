@@ -3,9 +3,10 @@ name: Build and Upload Release Assets
 on:
   release:
     types: [published] # Triggers automatically when you hit "Publish Release"
+  workflow_dispatch:   # 👈 THIS ADDS THE MANUAL BUTTON
 
 permissions:
-  contents: write # 👈 CRITICAL: Gives GitHub permission to upload files to the release
+  contents: write 
 
 jobs:
   release-assets:
@@ -17,20 +18,18 @@ jobs:
           - os: ubuntu-latest
             platform: linux
             artifact_name: steam-ticket-generator-linux.zip
-            binary_name: steam-ticket-generator  # Change this to your compiled file name
+            binary_name: steam-ticket-generator 
           - os: windows-latest
             platform: windows
             artifact_name: steam-ticket-generator-windows.zip
-            binary_name: steam-ticket-generator.exe # Change this to your compiled file name
+            binary_name: steam-ticket-generator.exe
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
       # ------------------------------------------------------------------
-      # 1. SETUP & BUILD YOUR APPLICATION HERE
-      # Un-comment or add the steps required for your programming language.
-      # (Examples: Go, Rust, Node.js, C++, Python/PyInstaller, etc.)
+      # 1. SETUP & BUILD (🚨 YOU MUST UNCOMMENT ONE OF THESE)
       # ------------------------------------------------------------------
       # Example for Node/Electron:
       # - uses: actions/setup-node@v4
@@ -45,13 +44,11 @@ jobs:
       # ------------------------------------------------------------------
       # 2. COMPRESS / ZIP THE BINARIES
       # ------------------------------------------------------------------
-      # Linux Compression
       - name: Create Zip Archive (Linux)
         if: matrix.platform == 'linux'
         run: |
           zip -r ${{ matrix.artifact_name }} ${{ matrix.binary_name }}
 
-      # Windows Compression
       - name: Create Zip Archive (Windows)
         if: matrix.platform == 'windows'
         shell: pwsh
@@ -59,9 +56,19 @@ jobs:
           Compress-Archive -Path ${{ matrix.binary_name }} -DestinationPath ${{ matrix.artifact_name }}
 
       # ------------------------------------------------------------------
-      # 3. UPLOAD TO GITHUB RELEASE
+      # 3. UPLOAD FILES
       # ------------------------------------------------------------------
+      
+      # Provides a download link in the Actions tab when triggered manually
+      - name: Upload Artifact (For Manual Runs)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}-build
+          path: ${{ matrix.artifact_name }}
+
+      # Uploads to the Release page (Only runs during a real release)
       - name: Upload Asset to Release
+        if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
           files: ${{ matrix.artifact_name }}
