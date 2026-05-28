@@ -1,4 +1,6 @@
-# Steam Ticket Generator
+# Only added a way to parse basegameid via command-line launch arguments
+
+# Steam Ticket Generator 
 
 This project provides an implementation of a encrypted app ticket generator for Steam. The generated ticket can then be used to run games that require a valid ticket to check for game ownership (ex. Denuvo protected games).
 
