@@ -1,23 +1,33 @@
-use std::{error::Error, io::{Read, Write}, time::Duration};
+use std::{error::Error, io::Write, time::Duration};
 
 use base64::{prelude::BASE64_STANDARD, Engine as _};
-use dialoguer::theme::ColorfulTheme;
 use steamworks_sys::ESteamAPIInitResult;
 
 fn main() {
-    let app_id = dialoguer::Input::<u32>::with_theme(&ColorfulTheme::default())
-        .with_prompt("Enter the App ID")
-        .interact()
-        .unwrap();
-
-    if let Err(e) = generate_ticket(app_id) {
-        eprintln!("Error while generating ticket: {}", e);
-        eprintln!("Make sure you have the Steam client running and logged in. Check also that the account owns the game");
-        return;
+    // 1. Parse command-line arguments to get the App ID
+    let args: Vec<String> = std::env::args().collect();
+    
+    if args.len() < 2 {
+        eprintln!("Usage: {} <App ID>", args[0]);
+        std::process::exit(1);
     }
 
-    println!("Press Enter to exit...");
-    std::io::stdin().read(&mut [0]).unwrap();
+    let app_id: u32 = match args[1].parse() {
+        Ok(id) => id,
+        Err(_) => {
+            eprintln!("Error: Invalid App ID. Please provide a valid number.");
+            std::process::exit(1);
+        }
+    };
+
+    // 2. Run the ticket generation
+    if let Err(e) = generate_ticket(app_id) {
+        eprintln!("Error while generating ticket: {}", e);
+        eprintln!("Make sure you have the Steam client running and logged in. Check also that the account owns the game.");
+        std::process::exit(1);
+    }
+
+    // "Press Enter to exit" removed to allow seamless automation
 }
 
 fn generate_ticket(app_id: u32) -> Result<(), Box<dyn Error>> {
@@ -75,17 +85,10 @@ fn generate_ticket(app_id: u32) -> Result<(), Box<dyn Error>> {
         println!("Steam ID: {}", steamid);
         println!("Encrypted App Ticket: {}", ticket);
 
-        let create_config_confirm = dialoguer::Confirm::with_theme(&ColorfulTheme::default())
-            .with_prompt("Do you want to create configs.user.ini file?")
-            .default(true)
-            .interact()
-            .unwrap();
-
-        if create_config_confirm {
-            match create_config(steamid, &ticket) {
-                Ok(_) => println!("configs.user.ini created successfully."),
-                Err(e) => eprintln!("Failed to create configs.user.ini: {}", e),
-            }
+        // 3. Automatically create configs.user.ini without asking the user
+        match create_config(steamid, &ticket) {
+            Ok(_) => println!("configs.user.ini created successfully."),
+            Err(e) => eprintln!("Failed to create configs.user.ini: {}", e),
         }
     }
     
