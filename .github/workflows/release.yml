@@ -1,0 +1,67 @@
+name: Build and Upload Release Assets
+
+on:
+  release:
+    types: [published] # Triggers automatically when you hit "Publish Release"
+
+permissions:
+  contents: write # 👈 CRITICAL: Gives GitHub permission to upload files to the release
+
+jobs:
+  release-assets:
+    name: Build & Upload for ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            artifact_name: steam-ticket-generator-linux.zip
+            binary_name: steam-ticket-generator  # Change this to your compiled file name
+          - os: windows-latest
+            platform: windows
+            artifact_name: steam-ticket-generator-windows.zip
+            binary_name: steam-ticket-generator.exe # Change this to your compiled file name
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # ------------------------------------------------------------------
+      # 1. SETUP & BUILD YOUR APPLICATION HERE
+      # Un-comment or add the steps required for your programming language.
+      # (Examples: Go, Rust, Node.js, C++, Python/PyInstaller, etc.)
+      # ------------------------------------------------------------------
+      # Example for Node/Electron:
+      # - uses: actions/setup-node@v4
+      #   with:
+      #     node-version: 20
+      # - run: npm ci && npm run build
+      
+      # Example for Go:
+      # - uses: actions/setup-go@v5
+      # - run: go build -o ${{ matrix.binary_name }}
+
+      # ------------------------------------------------------------------
+      # 2. COMPRESS / ZIP THE BINARIES
+      # ------------------------------------------------------------------
+      # Linux Compression
+      - name: Create Zip Archive (Linux)
+        if: matrix.platform == 'linux'
+        run: |
+          zip -r ${{ matrix.artifact_name }} ${{ matrix.binary_name }}
+
+      # Windows Compression
+      - name: Create Zip Archive (Windows)
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          Compress-Archive -Path ${{ matrix.binary_name }} -DestinationPath ${{ matrix.artifact_name }}
+
+      # ------------------------------------------------------------------
+      # 3. UPLOAD TO GITHUB RELEASE
+      # ------------------------------------------------------------------
+      - name: Upload Asset to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.artifact_name }}
